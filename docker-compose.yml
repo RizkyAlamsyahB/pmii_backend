@@ -1,0 +1,82 @@
+version: '3.9'
+
+services:
+  # ===========================
+  # MySQL Database
+  # ===========================
+  db:
+    image: mysql:8.0
+    container_name: pmii-db
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
+    ports:
+      - "${DB_PORT}:3306"
+    command: --default-authentication-plugin=mysql_native_password
+    volumes:
+      - dbdata:/var/lib/mysql
+    networks:
+      - pmii-network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${MYSQL_ROOT_PASSWORD}"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 30s
+
+  # ===========================
+  # phpMyAdmin (PORT: 8082)
+  # ===========================
+  phpmyadmin:
+    image: phpmyadmin/phpmyadmin:latest
+    container_name: pmii-phpmyadmin
+    restart: unless-stopped
+    ports:
+      - "8080:80"
+    environment:
+      PMA_HOST: db
+      PMA_PORT: 3306
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - pmii-network
+
+  # ===========================
+  # User Service (PORT: 8081)
+  # ===========================
+  user-service:
+    build:
+      context: .
+      dockerfile: services/user_service/Dockerfile
+    container_name: pmii-user-service
+    restart: unless-stopped
+    ports:
+      - "8081:8081"
+    environment:
+      APP_NAME: PMII User Service
+      APP_ENV: development
+      APP_PORT: 8081
+      DB_HOST: db
+      DB_PORT: 3306
+      DB_USER: ${DB_USER}
+      DB_PASS: ${DB_PASS}
+      DB_NAME: ${DB_NAME}
+      JWT_SECRET: ${JWT_SECRET}
+      JWT_EXPIRE_HOURS: 24
+      SERVER_READ_TIMEOUT: 30
+      SERVER_WRITE_TIMEOUT: 30
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - pmii-network
+
+volumes:
+  dbdata:
+
+networks:
+  pmii-network:
+    driver: bridge
