@@ -1,0 +1,680 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "PMII User Service API",
+    "version": "1.0.0",
+    "description": "API documentation for PMII User Service - handles authentication and user management"
+  },
+  "servers": [
+    {
+      "url": "http://localhost:8081",
+      "description": "Development server"
+    }
+  ],
+  "tags": [
+    {
+      "name": "Authentication",
+      "description": "User authentication endpoints"
+    },
+    {
+      "name": "User Management",
+      "description": "User CRUD operations (Admin only)"
+    }
+  ],
+  "paths": {
+    "/health": {
+      "get": {
+        "summary": "Health check",
+        "responses": {
+          "200": {
+            "description": "Service is healthy",
+            "content": {
+              "application/json": {
+                "example": {
+                  "status": "ok",
+                  "service": "user-service"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/auth/register": {
+      "post": {
+        "tags": ["Authentication"],
+        "summary": "Register new user",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["fullName", "email", "password", "level"],
+                "properties": {
+                  "fullName": {
+                    "type": "string",
+                    "minLength": 3,
+                    "maxLength": 100,
+                    "example": "John Doe"
+                  },
+                  "email": {
+                    "type": "string",
+                    "format": "email",
+                    "example": "john@pmii.or.id"
+                  },
+                  "password": {
+                    "type": "string",
+                    "minLength": 6,
+                    "example": "password123"
+                  },
+                  "level": {
+                    "type": "string",
+                    "enum": ["1", "2"],
+                    "example": "2",
+                    "description": "1=Admin, 2=Author"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "User registered successfully",
+            "content": {
+              "application/json": {
+                "example": {
+                  "meta": {
+                    "code": 201,
+                    "status": "success",
+                    "message": "User registered successfully"
+                  },
+                  "data": {
+                    "id": 1,
+                    "fullName": "John Doe",
+                    "email": "john@pmii.or.id",
+                    "role": "author",
+                    "status": "active",
+                    "createdAt": "2025-12-01T08:00:00Z",
+                    "updatedAt": "2025-12-01T08:00:00Z"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation error or email already exists",
+            "content": {
+              "application/json": {
+                "example": {
+                  "meta": {
+                    "code": 400,
+                    "status": "error",
+                    "message": "Validation error"
+                  },
+                  "data": "",
+                  "errors": {
+                    "validation": ["email already exists"]
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/auth/login": {
+      "post": {
+        "tags": ["Authentication"],
+        "summary": "User login",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["email", "password"],
+                "properties": {
+                  "email": {
+                    "type": "string",
+                    "format": "email",
+                    "example": "admin@pmii.or.id"
+                  },
+                  "password": {
+                    "type": "string",
+                    "example": "admin123"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Login successful",
+            "content": {
+              "application/json": {
+                "example": {
+                  "meta": {
+                    "code": 200,
+                    "status": "success",
+                    "message": "Login successful"
+                  },
+                  "data": {
+                    "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+                    "user": {
+                      "id": 1,
+                      "fullName": "Admin PMII",
+                      "email": "admin@pmii.or.id",
+                      "role": "admin",
+                      "status": "active",
+                      "createdAt": "2025-12-01T08:00:00Z",
+                      "updatedAt": "2025-12-01T08:00:00Z"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Invalid credentials",
+            "content": {
+              "application/json": {
+                "example": {
+                  "meta": {
+                    "code": 401,
+                    "status": "error",
+                    "message": "Invalid credentials"
+                  },
+                  "data": ""
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/auth/logout": {
+      "post": {
+        "tags": ["Authentication"],
+        "summary": "User logout",
+        "description": "Client-side logout (invalidate token on client)",
+        "responses": {
+          "200": {
+            "description": "Logout successful",
+            "content": {
+              "application/json": {
+                "example": {
+                  "meta": {
+                    "code": 200,
+                    "status": "success",
+                    "message": "Logout successful"
+                  },
+                  "data": ""
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/auth/me": {
+      "get": {
+        "tags": ["Authentication"],
+        "summary": "Get current user profile",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "User profile retrieved",
+            "content": {
+              "application/json": {
+                "example": {
+                  "meta": {
+                    "code": 200,
+                    "status": "success",
+                    "message": "User profile retrieved successfully"
+                  },
+                  "data": {
+                    "id": 1,
+                    "fullName": "Admin PMII",
+                    "email": "admin@pmii.or.id",
+                    "role": "admin",
+                    "status": "active",
+                    "createdAt": "2025-12-01T08:00:00Z",
+                    "updatedAt": "2025-12-01T08:00:00Z"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized - Invalid or missing token"
+          }
+        }
+      }
+    },
+    "/v1/users": {
+      "post": {
+        "tags": ["User Management"],
+        "summary": "Create new user (Admin only)",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["fullName", "email", "password", "level"],
+                "properties": {
+                  "fullName": {
+                    "type": "string",
+                    "minLength": 3,
+                    "maxLength": 100,
+                    "example": "New User"
+                  },
+                  "email": {
+                    "type": "string",
+                    "format": "email",
+                    "example": "newuser@pmii.or.id"
+                  },
+                  "password": {
+                    "type": "string",
+                    "minLength": 6,
+                    "example": "password123"
+                  },
+                  "level": {
+                    "type": "string",
+                    "enum": ["1", "2"],
+                    "example": "2",
+                    "description": "1=Admin, 2=Author"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "User created successfully",
+            "content": {
+              "application/json": {
+                "example": {
+                  "meta": {
+                    "code": 201,
+                    "status": "success",
+                    "message": "User created successfully"
+                  },
+                  "data": {
+                    "id": 5,
+                    "fullName": "New User",
+                    "email": "newuser@pmii.or.id",
+                    "role": "author",
+                    "status": "active",
+                    "createdAt": "2025-12-01T08:00:00Z",
+                    "updatedAt": "2025-12-01T08:00:00Z"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation error or email already exists"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden - Admin access only"
+          }
+        }
+      },
+      "get": {
+        "tags": ["User Management"],
+        "summary": "Get all users (Admin only)",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "default": 1
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "default": 10
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Users retrieved successfully",
+            "content": {
+              "application/json": {
+                "example": {
+                  "meta": {
+                    "code": 200,
+                    "status": "success",
+                    "message": "Users retrieved successfully"
+                  },
+                  "data": {
+                    "meta": {
+                      "page": 1,
+                      "limit": 10,
+                      "total": 25,
+                      "totalPages": 3
+                    },
+                    "data": [
+                      {
+                        "id": 1,
+                        "fullName": "Admin PMII",
+                        "email": "admin@pmii.or.id",
+                        "role": "admin",
+                        "status": "active",
+                        "createdAt": "2025-12-01T08:00:00Z",
+                        "updatedAt": "2025-12-01T08:00:00Z"
+                      }
+                    ]
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden - Admin access only"
+          }
+        }
+      }
+    },
+    "/v1/users/{id}": {
+      "get": {
+        "tags": ["User Management"],
+        "summary": "Get user by ID (Admin only)",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "User retrieved successfully",
+            "content": {
+              "application/json": {
+                "example": {
+                  "meta": {
+                    "code": 200,
+                    "status": "success",
+                    "message": "User retrieved successfully"
+                  },
+                  "data": {
+                    "id": 1,
+                    "fullName": "Admin PMII",
+                    "email": "admin@pmii.or.id",
+                    "role": "admin",
+                    "status": "active",
+                    "createdAt": "2025-12-01T08:00:00Z",
+                    "updatedAt": "2025-12-01T08:00:00Z"
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "User not found"
+          }
+        }
+      },
+      "put": {
+        "tags": ["User Management"],
+        "summary": "Update user (Admin only)",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["fullName", "email", "level", "status"],
+                "properties": {
+                  "fullName": {
+                    "type": "string",
+                    "minLength": 3,
+                    "maxLength": 100
+                  },
+                  "email": {
+                    "type": "string",
+                    "format": "email"
+                  },
+                  "level": {
+                    "type": "string",
+                    "enum": ["1", "2"]
+                  },
+                  "status": {
+                    "type": "string",
+                    "enum": ["0", "1"],
+                    "description": "0=Inactive, 1=Active"
+                  },
+                  "photo": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "User updated successfully"
+          },
+          "404": {
+            "description": "User not found"
+          }
+        }
+      },
+      "delete": {
+        "tags": ["User Management"],
+        "summary": "Delete user (Admin only)",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "User deleted successfully",
+            "content": {
+              "application/json": {
+                "example": {
+                  "meta": {
+                    "code": 200,
+                    "status": "success",
+                    "message": "User deleted successfully"
+                  },
+                  "data": ""
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "User not found"
+          }
+        }
+      }
+    },
+    "/v1/users/{id}/change-password": {
+      "post": {
+        "tags": ["User Management"],
+        "summary": "Change user password (Admin only)",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["oldPassword", "newPassword"],
+                "properties": {
+                  "oldPassword": {
+                    "type": "string"
+                  },
+                  "newPassword": {
+                    "type": "string",
+                    "minLength": 6
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Password changed successfully",
+            "content": {
+              "application/json": {
+                "example": {
+                  "meta": {
+                    "code": 200,
+                    "status": "success",
+                    "message": "Password changed successfully"
+                  },
+                  "data": ""
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid old password"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "BearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT"
+      }
+    },
+    "schemas": {
+      "Meta": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "integer"
+          },
+          "status": {
+            "type": "string",
+            "enum": ["success", "error"]
+          },
+          "message": {
+            "type": "string"
+          }
+        }
+      },
+      "User": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "fullName": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string",
+            "format": "email"
+          },
+          "role": {
+            "type": "string",
+            "enum": ["admin", "author"]
+          },
+          "status": {
+            "type": "string",
+            "enum": ["active", "inactive"]
+          },
+          "photo": {
+            "type": "string"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      }
+    }
+  }
+}
